@@ -35,6 +35,7 @@
 </head>
 <body class="text-gray-800">
   <div class="container mx-auto px-4 py-6 max-w-7xl" id="appContainer">
+    <!-- En-tête -->
     <div class="bg-white rounded-2xl shadow-md mb-6 overflow-hidden border-t-4 border-jaune-pro card">
       <div class="flex flex-wrap justify-between items-center p-4">
         <div class="flex items-center gap-4">
@@ -54,6 +55,7 @@
       </div>
     </div>
 
+    <!-- 5 KPI -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
       <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">CA</p><p id="kpiCa" class="text-2xl font-extrabold text-bleu-pro">0 MAD</p><i class="fas fa-chart-line text-jaune-pro float-right -mt-8 text-2xl"></i></div>
       <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Marge brute</p><p id="kpiMarge" class="text-2xl font-extrabold text-bleu-pro">0 MAD</p><i class="fas fa-coins text-jaune-pro float-right -mt-8 text-2xl"></i></div>
@@ -62,6 +64,7 @@
       <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Score pilotage</p><p id="scorePilotage" class="text-2xl font-extrabold">0/100</p><i class="fas fa-trophy text-jaune-pro float-right -mt-8 text-2xl"></i></div>
     </div>
 
+    <!-- Section principale : paramètres batch + charges fixes -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <div class="bg-white rounded-2xl shadow-sm p-5 card">
         <h2 class="text-lg font-semibold mb-3 flex items-center gap-2 text-bleu-pro"><i class="fas fa-cubes text-jaune-pro"></i> Coût réel batch (MAD/m³)</h2>
@@ -85,6 +88,7 @@
       </div>
     </div>
 
+    <!-- Optimiseur prix / prédiction / scénarios -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       <div class="bg-white rounded-2xl shadow-sm p-4 card">
         <h3 class="font-semibold text-bleu-pro"><i class="fas fa-road text-jaune-pro"></i> Price Optimizer (logistique)</h3>
@@ -110,16 +114,19 @@
       </div>
     </div>
 
+    <!-- Graphique + analyse seuil -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-4 card"><canvas id="graphique" height="200"></canvas></div>
       <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro">Analyse seuil (MAD)</h3><div id="analyseDetails" class="text-sm space-y-1 mt-2"></div></div>
     </div>
 
+    <!-- Logs -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 no-print">
       <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro"><i class="fas fa-history"></i> Journal webhook</h3><div id="webhookLog" class="mt-2 max-h-48 overflow-auto bg-gray-50 rounded-lg p-2 text-xs"></div></div>
       <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro"><i class="fas fa-edit"></i> Suivi modifications</h3><div id="modificationsLog" class="mt-2 max-h-48 overflow-auto bg-gray-50 rounded-lg p-2 text-xs"></div></div>
     </div>
 
+    <!-- Rapport détaillé -->
     <div class="bg-white rounded-2xl shadow-sm p-5 card"><h2 class="text-xl font-bold text-bleu-pro">Rapport d'analyse</h2><div id="rapportTexte" class="text-sm text-gray-700 mt-2 space-y-1"></div></div>
     <div class="text-center text-gray-400 text-xs mt-6 no-print">© PTM NANO ULTIMATE – Performance Engine v3.0</div>
   </div>
@@ -148,7 +155,7 @@
       return costRounded;
     }
 
-    // Fonction graphique
+    // Fonction pour créer/mettre à jour le graphique en respectant le dark mode
     function updateChart(prix, cvReel, totalFixes, qte, seuilQte) {
       if (chart) chart.destroy();
       let isDark = document.body.classList.contains('dark');
@@ -166,4 +173,285 @@
         data: {
           labels: quantites,
           datasets: [
-            { label: 'CA (MAD)', data: recettes, borderColor: '#0A2540', backgroundColor: 'transparent', tension: 0.1, pointBackgroundColor: '#0
+            { label: 'CA (MAD)', data: recettes, borderColor: '#0A2540', backgroundColor: 'transparent', tension: 0.1, pointBackgroundColor: '#0A2540', borderWidth: 2 },
+            { label: 'Coûts totaux (MAD)', data: coutsTotaux, borderColor: '#F5A623', backgroundColor: 'transparent', tension: 0.1, pointBackgroundColor: '#F5A623', borderWidth: 2 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { labels: { color: textColor } } },
+          scales: {
+            x: { title: { display: true, text: 'Quantité (m³)', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
+            y: { title: { display: true, text: 'MAD', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } }
+          }
+        }
+      });
+    }
+
+    // Rafraîchissement global (KPI, alertes, graphique, prédiction, etc.)
+    function refreshAll() {
+      let prix = parseFloat(document.getElementById('prix').value) || 0;
+      let qte = parseFloat(document.getElementById('qte').value) || 0;
+      let totalFixes = getTotalFixes();
+      let cvReel = calculActualCost();
+      let ca = prix * qte;
+      let totalVar = cvReel * qte;
+      let margeBrute = ca - totalVar;
+      let resultat = margeBrute - totalFixes;
+      let tauxMarge = ca === 0 ? 0 : (margeBrute / ca) * 100;
+      
+      // Arrondi des valeurs pour affichage
+      let caRounded = Math.round(ca);
+      let margeBruteRounded = Math.round(margeBrute);
+      let totalFixesRounded = Math.round(totalFixes);
+      document.getElementById('kpiCa').innerText = caRounded.toLocaleString() + " MAD";
+      document.getElementById('kpiMarge').innerText = margeBruteRounded.toLocaleString() + " MAD";
+      document.getElementById('kpiTaux').innerText = tauxMarge.toFixed(1) + "%";
+      document.getElementById('totalFixes').innerText = totalFixesRounded.toLocaleString() + " MAD";
+
+      let margeUnitaire = prix - cvReel;
+      let valide = (margeUnitaire > 0);
+      let seuilCa = 0, seuilQte = 0;
+      if (valide) {
+        seuilQte = totalFixes / margeUnitaire;
+        seuilCa = seuilQte * prix;
+      }
+      let seuilCaRounded = Math.round(seuilCa);
+      document.getElementById('kpiSeuil').innerText = (valide && isFinite(seuilCa)) ? seuilCaRounded.toLocaleString() + " MAD" : "N/A";
+      
+      let margeSec = ca - seuilCa;
+      let ratioSec = ca === 0 ? 0 : (margeSec / ca) * 100;
+      let score = 0;
+      if (tauxMarge >= 30) score += 25;
+      else if (tauxMarge >= 20) score += 15;
+      else score += 5;
+      if (valide && qte >= seuilQte) score += 30;
+      else if (valide && qte >= seuilQte * 0.8) score += 10;
+      if (resultat > 0) score += 25;
+      if (margeUnitaire > 0 && (prix / cvReel) > 1.5) score += 20;
+      score = Math.min(100, score);
+      document.getElementById('scorePilotage').innerText = score + "/100";
+      
+      let levier = (margeBrute !== 0 && resultat !== 0) ? (margeBrute / resultat).toFixed(2) : "N/A";
+      let pointMortJours = (valide && isFinite(seuilQte) && qte > 0) ? (seuilQte / qte) * 30 : 0;
+      let pointMortAff = (pointMortJours > 0 && pointMortJours <= 30) ? pointMortJours.toFixed(1) + " jours" : (pointMortJours > 30 ? ">30j" : "N/A");
+      
+      document.getElementById('analyseDetails').innerHTML = `
+        <div>Seuil qté : ${valide ? Math.ceil(seuilQte) : 'N/A'} m³</div>
+        <div>CA critique : ${valide ? Math.round(seuilCa).toLocaleString() : 'N/A'} MAD</div>
+        <div>Marge sécurité : ${valide ? Math.round(margeSec).toLocaleString() : 'N/A'} MAD (${valide ? ratioSec.toFixed(1) : '0'}%)</div>
+        <div>Point mort : ${pointMortAff}</div>
+        <div>Levier : ${levier}</div>`;
+      
+      document.getElementById('rapportTexte').innerHTML = `
+        <p>📊 CA: ${Math.round(ca).toLocaleString()} MAD | Résultat: ${Math.round(resultat).toLocaleString()} MAD | Taux marge: ${tauxMarge.toFixed(1)}% | Score: ${score}/100</p>
+        <p>${resultat < 0 ? "⚠️ Perte, réduisez les coûts fixes ou augmentez le volume." : "✅ Bénéfice, surveillez l’évolution."}</p>`;
+      
+      // Prédiction (avec arrondi)
+      let throughput = parseFloat(document.getElementById('throughput').value) || 0;
+      let predictedQty = (qte * 0.7) + (throughput * 30 * 0.3);
+      let predictedCA = Math.round(predictedQty * prix);
+      document.getElementById('predictionResult').innerHTML = predictedCA.toLocaleString() + " MAD";
+      
+      // Alertes internes
+      let alerts = [];
+      if (margeUnitaire <= 0) alerts.push("🔴 Marge unitaire négative !");
+      if (valide && qte < seuilQte) alerts.push(`🟡 Quantité sous seuil (${Math.ceil(seuilQte)} m³ requis)`);
+      if (tauxMarge < 20) alerts.push("🟡 Taux marge faible (<20%)");
+      if (resultat < 0) alerts.push("🔴 Résultat net négatif");
+      if (alerts.length === 0) alerts.push("🟢 Tous les indicateurs sont au vert");
+      document.getElementById('alertes').innerHTML = alerts.map(a => `<div class="p-2 rounded-lg ${a.includes('🔴')?'bg-red-100 border-l-4 border-red-500':a.includes('🟡')?'bg-amber-100 border-l-4 border-amber-500':'bg-emerald-100 border-l-4 border-emerald-500'}">${a}</div>`).join('');
+      
+      // Mise à jour du graphique avec les couleurs adaptées
+      updateChart(prix, cvReel, totalFixes, qte, seuilQte);
+      
+      saveToLocal();  // sauvegarde automatique après chaque changement
+    }
+
+    // Gestion du tableau des charges fixes
+    function renderFixedTable() {
+      let tbody = document.getElementById('tableFixes');
+      tbody.innerHTML = '';
+      fixedCharges.forEach((c, idx) => {
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="text" value="${c.name.replace(/[&<>]/g, '')}" data-idx="${idx}" class="charge-name w-full bg-transparent"></td>
+          <td><input type="number" value="${Math.round(c.amount)}" data-idx="${idx}" class="charge-amount w-24 border rounded px-1"></td>
+          <td><button data-idx="${idx}" class="delCharge text-red-500"><i class="fas fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.querySelectorAll('.charge-name').forEach(inp => inp.addEventListener('change', (e) => { let idx = e.target.dataset.idx; fixedCharges[idx].name = e.target.value; refreshAll(); }));
+      document.querySelectorAll('.charge-amount').forEach(inp => inp.addEventListener('input', (e) => { let idx = e.target.dataset.idx; fixedCharges[idx].amount = Math.round(parseFloat(e.target.value) || 0); refreshAll(); }));
+      document.querySelectorAll('.delCharge').forEach(btn => btn.addEventListener('click', (e) => { let idx = btn.dataset.idx; fixedCharges.splice(idx, 1); renderFixedTable(); refreshAll(); }));
+      refreshAll();
+    }
+
+    // ---------- STOCKAGE (compatible aperçu Claude.ai + navigateur classique) ----------
+    const STORAGE_KEY = 'ptmNanoUltimate';
+    let autoSaveTimer = null;
+
+    async function storageSet(key, value) {
+      if (window.storage && typeof window.storage.set === 'function') {
+        try { await window.storage.set(key, value); return true; } catch (e) { /* on bascule sur localStorage */ }
+      }
+      try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
+    }
+
+    async function storageGet(key) {
+      if (window.storage && typeof window.storage.get === 'function') {
+        try { const r = await window.storage.get(key); return r ? r.value : null; } catch (e) { /* on bascule sur localStorage */ }
+      }
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+
+    function collectFormData() {
+      return {
+        prix: document.getElementById('prix').value,
+        qte: document.getElementById('qte').value,
+        coutCiment: document.getElementById('coutCiment').value,
+        coutGravier: document.getElementById('coutGravier').value,
+        coutSable: document.getElementById('coutSable').value,
+        coutGazole: document.getElementById('coutGazole').value,
+        coutMaintenance: document.getElementById('coutMaintenance').value,
+        coutMO: document.getElementById('coutMO').value,
+        throughput: document.getElementById('throughput').value,
+        fixedCharges: fixedCharges,
+        darkMode: document.body.classList.contains('dark')
+      };
+    }
+
+    // Sauvegarde manuelle (bouton "Sauvegarder") : immédiate et journalisée
+    async function saveToLocal() {
+      clearTimeout(autoSaveTimer);
+      await storageSet(STORAGE_KEY, JSON.stringify(collectFormData()));
+      addModification("Configuration sauvegardée");
+    }
+
+    // Sauvegarde automatique (à chaque saisie) : différée et silencieuse
+    function autoSave() {
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(() => { storageSet(STORAGE_KEY, JSON.stringify(collectFormData())); }, 800);
+    }
+
+    async function loadFromLocal() {
+      let raw = await storageGet(STORAGE_KEY);
+      if (raw) {
+        let c = JSON.parse(raw);
+        if (c.prix) document.getElementById('prix').value = c.prix;
+        if (c.qte) document.getElementById('qte').value = c.qte;
+        if (c.coutCiment) document.getElementById('coutCiment').value = c.coutCiment;
+        if (c.coutGravier) document.getElementById('coutGravier').value = c.coutGravier;
+        if (c.coutSable) document.getElementById('coutSable').value = c.coutSable;
+        if (c.coutGazole) document.getElementById('coutGazole').value = c.coutGazole;
+        if (c.coutMaintenance) document.getElementById('coutMaintenance').value = c.coutMaintenance;
+        if (c.coutMO) document.getElementById('coutMO').value = c.coutMO;
+        if (c.throughput) document.getElementById('throughput').value = c.throughput;
+        if (c.fixedCharges) fixedCharges = c.fixedCharges;
+        if (c.darkMode) document.body.classList.add('dark');
+        renderFixedTable();
+        refreshAll();
+        addModification("Chargement depuis sauvegarde");
+      }
+    }
+
+    // Génération PDF multi-pages avec arrondi des chiffres
+    async function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const element = document.getElementById('appContainer');
+      const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      pdf.save(`PTM_NANO_${new Date().toISOString().slice(0,19)}.pdf`);
+    }
+
+    // Envoi d'alerte vers webhook
+    async function sendAlertToWebhook(message) {
+      let url = document.getElementById('webhookUrl').value.trim();
+      if (!url) return;
+      let kpiCa = document.getElementById('kpiCa').innerText;
+      let payload = { type: 'alerte', message, timestamp: new Date().toISOString(), kpis: { ca: kpiCa } };
+      try {
+        let r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        addWebhookLog(r.ok ? "✅ Envoyé" : "❌ Erreur " + r.status, url, payload);
+      } catch(e) { addWebhookLog("❌ Échec réseau", url, payload); }
+    }
+
+    // Gestion du Dark Mode + mise à jour du graphique
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+      // Reconstruire le graphique avec les nouvelles couleurs
+      let prix = parseFloat(document.getElementById('prix').value) || 0;
+      let cvReel = calculActualCost();
+      let totalFixes = getTotalFixes();
+      let qte = parseFloat(document.getElementById('qte').value) || 0;
+      let margeUnitaire = prix - cvReel;
+      let seuilQte = (margeUnitaire > 0) ? totalFixes / margeUnitaire : 0;
+      updateChart(prix, cvReel, totalFixes, qte, seuilQte);
+    }
+
+    // Événements
+    document.getElementById('saveBtn').addEventListener('click', () => saveToLocal());
+    document.getElementById('loadBtn').addEventListener('click', () => loadFromLocal());
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
+    document.getElementById('pdfBtn').addEventListener('click', generatePDF);
+    document.getElementById('ajouterCharge').addEventListener('click', () => { fixedCharges.push({ name: "Nouvelle charge", amount: 0 }); renderFixedTable(); refreshAll(); });
+    document.getElementById('optimizePrice').addEventListener('click', () => {
+      let distance = parseFloat(document.getElementById('distance').value) || 0;
+      let coutTrajet = parseFloat(document.getElementById('coutTrajet').value) || 0;
+      let cvReel = calculActualCost();
+      let coutLog = coutTrajet + (distance * 4.5);
+      let prixOpti = (cvReel + coutLog) / 0.75;
+      document.getElementById('optimalPriceDisplay').innerHTML = `Prix recommandé : ${Math.round(prixOpti)} MAD/m³ (marge 25%)`;
+    });
+    document.getElementById('sendWebhook').addEventListener('click', () => {
+      let firstAlert = document.querySelector('#alertes div:first-child')?.innerText || "Alerte manuelle";
+      sendAlertToWebhook(firstAlert);
+    });
+    document.getElementById('scenarioOpti').addEventListener('click', () => {
+      let qteInput = document.getElementById('qte');
+      qteInput.value = Math.round(parseFloat(qteInput.value) * 1.15);
+      refreshAll();
+    });
+    document.getElementById('scenarioPessi').addEventListener('click', () => {
+      let qteInput = document.getElementById('qte');
+      qteInput.value = Math.round(parseFloat(qteInput.value) * 0.9);
+      refreshAll();
+    });
+    document.getElementById('scenarioEquilibre').addEventListener('click', () => {
+      let prix = parseFloat(document.getElementById('prix').value);
+      let cv = calculActualCost();
+      let totalF = getTotalFixes();
+      let margeU = prix - cv;
+      if (margeU > 0) {
+        let qteSeuil = Math.ceil(totalF / margeU);
+        document.getElementById('qte').value = qteSeuil;
+        refreshAll();
+      } else alert("Marge unitaire négative – impossible d’atteindre le seuil.");
+    });
+    document.getElementById('darkModeBtn').addEventListener('click', toggleDarkMode);
+
+    // Écouteurs sur tous les champs métier
+    document.querySelectorAll('#coutCiment,#coutGravier,#coutSable,#coutGazole,#coutMaintenance,#coutMO,#prix,#qte,#throughput').forEach(inp => inp.addEventListener('input', () => refreshAll()));
+
+    // Initialisation
+    renderFixedTable();
+    loadFromLocal();
+    refreshAll();
+  </script>
+</body>
+</html>
