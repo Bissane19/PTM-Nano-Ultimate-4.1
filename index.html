@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>PTM NANO ULTIMATE – Performance Engine v3.0</title>
+  <title>PTM FLEX – Configuration cachée</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -13,445 +13,371 @@
   <style>
     body { font-family: 'Inter', sans-serif; background: #F0F4F8; transition: background 0.3s, color 0.3s; }
     body.dark { background: #0F172A; color: #E2E8F0; }
-    body.dark .bg-white, body.dark .card, body.dark .bg-gray-50, body.dark .bg-gray-100, body.dark .bg-gray-200 { background-color: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
-    body.dark input, body.dark select, body.dark textarea { background-color: #0F172A; color: #E2E8F0; border-color: #475569; }
-    body.dark .bg-amber-50, body.dark .bg-emerald-50, body.dark .bg-blue-50, body.dark .bg-red-100, body.dark .bg-amber-100, body.dark .bg-emerald-100 { background-color: #2D3748 !important; color: #E2E8F0 !important; }
-    .bg-bleu-pro { background-color: #0A2540; }
-    .text-bleu-pro { color: #0A2540; }
-    .bg-jaune-pro { background-color: #F5A623; }
-    .text-jaune-pro { color: #F5A623; }
-    .btn-pro { transition: all 0.2s ease; }
-    .btn-pro:hover { transform: translateY(-2px); filter: brightness(105%); }
-    .card-pro { transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #E2E8F0; }
-    .card-pro:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.1); }
-    .log-entry { font-family: monospace; font-size: 0.7rem; padding: 4px; border-bottom: 1px solid #E2E8F0; }
-    body.dark .log-entry { border-bottom-color: #334155; }
-    .modif-item { background: #FEF9E6; padding: 4px 8px; border-radius: 8px; font-size: 0.7rem; margin: 2px; border-left: 3px solid #F5A623; }
-    body.dark .modif-item { background: #2D3748; border-left-color: #F5A623; }
-    .perf-led { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; background-color: #F5A623; }
-    @keyframes pulse { 0% { opacity: 0.4; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.2); } }
-    @media print { .no-print { display: none !important; } }
+    body.dark .bg-white, body.dark .card, body.dark .bg-gray-50, body.dark .bg-gray-100 { background-color: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
+    body.dark input, body.dark select { background-color: #0F172A; color: #E2E8F0; border-color: #475569; }
+    #configPanel {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      z-index: 1000;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      padding: 20px;
+    }
+    body.dark #configPanel { background: #1E293B; color: #E2E8F0; }
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 999;
+    }
+    .config-open .overlay, .config-open #configPanel { display: block; }
+    .config-open #configPanel { display: block; }
   </style>
 </head>
-<body class="text-gray-800">
-  <div class="container mx-auto px-4 py-6 max-w-7xl" id="appContainer">
-    <!-- En-tête -->
-    <div class="bg-white rounded-2xl shadow-md mb-6 overflow-hidden border-t-4 border-jaune-pro card">
-      <div class="flex flex-wrap justify-between items-center p-4">
-        <div class="flex items-center gap-4">
-          <div class="bg-bleu-pro rounded-xl p-2 shadow-sm"><i class="fas fa-microchip text-jaune-pro text-2xl"></i></div>
-          <div>
-            <div class="flex items-center gap-2"><span class="text-xl font-extrabold text-bleu-pro">PTM NANO</span><span class="text-xs bg-jaune-pro text-bleu-pro px-2 py-0.5 rounded-full font-semibold">ULTIMATE</span></div>
-            <div class="flex items-center gap-3 mt-1"><span class="text-xs text-gray-500"><i class="fas fa-bolt text-jaune-pro"></i> n8n Ready</span><span class="text-xs text-gray-500"><i class="fas fa-chart-line text-jaune-pro"></i> Real-time</span><span class="text-xs text-gray-500"><span class="perf-led"></span> Live Sync</span></div>
-          </div>
-        </div>
-        <div class="flex gap-2 no-print mt-2 md:mt-0">
-          <button id="darkModeBtn" class="bg-gray-700 text-white px-4 py-2 rounded-xl text-sm font-semibold btn-pro shadow-sm"><i class="fas fa-moon"></i> Dark</button>
-          <button id="printBtn" class="bg-bleu-pro text-white px-4 py-2 rounded-xl text-sm font-semibold btn-pro shadow-sm"><i class="fas fa-print"></i> Imprimer</button>
-          <button id="pdfBtn" class="bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-semibold btn-pro shadow-sm"><i class="fas fa-file-pdf"></i> PDF</button>
-          <button id="saveBtn" class="bg-jaune-pro text-bleu-pro px-4 py-2 rounded-xl text-sm font-semibold btn-pro shadow-sm"><i class="fas fa-save"></i> Sauvegarder</button>
-          <button id="loadBtn" class="border border-bleu-pro text-bleu-pro bg-white px-4 py-2 rounded-xl text-sm font-semibold btn-pro"><i class="fas fa-upload"></i> Charger</button>
+<body>
+<div class="container mx-auto px-4 py-6 max-w-7xl" id="appContainer">
+  <!-- En-tête -->
+  <div class="bg-white rounded-2xl shadow-md mb-6 overflow-hidden border-t-4 border-jaune-pro card">
+    <div class="flex flex-wrap justify-between items-center p-4">
+      <div class="flex items-center gap-4">
+        <div class="bg-bleu-pro rounded-xl p-2"><i id="projetIcon" class="fas fa-microchip text-jaune-pro text-2xl"></i></div>
+        <div>
+          <span id="projetNom" class="text-xl font-extrabold text-bleu-pro cursor-pointer hover:underline" contenteditable="true">PTM FLEX</span>
+          <span class="text-xs bg-jaune-pro text-bleu-pro px-2 py-0.5 rounded-full ml-2">v4.0</span>
+          <div class="flex items-center gap-3 mt-1"><span class="text-xs"><i class="fas fa-bolt text-jaune-pro"></i> <span id="uniteMonetaireLabel">MAD</span></span><span class="text-xs"><span class="perf-led"></span> Live Sync</span></div>
         </div>
       </div>
-    </div>
-
-    <!-- 5 KPI -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
-      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">CA</p><p id="kpiCa" class="text-2xl font-extrabold text-bleu-pro">0 MAD</p><i class="fas fa-chart-line text-jaune-pro float-right -mt-8 text-2xl"></i></div>
-      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Marge brute</p><p id="kpiMarge" class="text-2xl font-extrabold text-bleu-pro">0 MAD</p><i class="fas fa-coins text-jaune-pro float-right -mt-8 text-2xl"></i></div>
-      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Taux marge</p><p id="kpiTaux" class="text-2xl font-extrabold text-bleu-pro">0%</p><i class="fas fa-percent text-jaune-pro float-right -mt-8 text-2xl"></i></div>
-      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-jaune-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Seuil rentabilité</p><p id="kpiSeuil" class="text-2xl font-extrabold text-jaune-pro">0 MAD</p><i class="fas fa-flag-checkered text-jaune-pro float-right -mt-8 text-2xl"></i></div>
-      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Score pilotage</p><p id="scorePilotage" class="text-2xl font-extrabold">0/100</p><i class="fas fa-trophy text-jaune-pro float-right -mt-8 text-2xl"></i></div>
-    </div>
-
-    <!-- Section principale : paramètres batch + charges fixes -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      <div class="bg-white rounded-2xl shadow-sm p-5 card">
-        <h2 class="text-lg font-semibold mb-3 flex items-center gap-2 text-bleu-pro"><i class="fas fa-cubes text-jaune-pro"></i> Coût réel batch (MAD/m³)</h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-          <label>Ciment (t) <input type="number" id="coutCiment" value="120" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-          <label>Gravier (t) <input type="number" id="coutGravier" value="80" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-          <label>Sable (t) <input type="number" id="coutSable" value="40" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-          <label>Gazole (L) <input type="number" id="coutGazole" value="11" step="1" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-          <label>Maintenance <input type="number" id="coutMaintenance" value="200" step="50" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-          <label>Main d'œuvre (h) <input type="number" id="coutMO" value="60" step="10" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-          <label>Prix vente (MAD) <input type="number" id="prix" value="320" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-          <label>Quantité (m³) <input type="number" id="qte" value="400" step="10" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-          <label>Throughput (m³/j) <input type="number" id="throughput" value="45" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
-        </div>
-        <div class="mt-4 p-3 bg-amber-50 rounded-xl"><span class="font-bold">Coût unitaire réel (batch) :</span> <span id="actualCostDisplay" class="font-mono text-jaune-pro text-xl">0 MAD</span></div>
-      </div>
-      <div class="bg-white rounded-2xl shadow-sm p-5 card">
-        <div class="flex justify-between items-center mb-3"><h2 class="text-lg font-semibold text-bleu-pro"><i class="fas fa-receipt text-jaune-pro"></i> Charges fixes (MAD)</h2><button id="ajouterCharge" class="text-sm bg-jaune-pro text-bleu-pro px-3 py-1 rounded-lg font-semibold"><i class="fas fa-plus"></i> Ajouter</button></div>
-        <div class="overflow-x-auto max-h-64 overflow-y-auto"><table class="w-full text-sm"><thead class="border-b border-gray-200"><tr><th>Libellé</th><th>Montant</th><th></th></tr></thead><tbody id="tableFixes"></tbody></table></div>
-        <div class="mt-4 pt-3 border-t border-gray-200 flex justify-between font-bold"><span>Total fixes :</span><span id="totalFixes" class="text-jaune-pro">0 MAD</span></div>
+      <div class="flex gap-2 mt-2 md:mt-0">
+        <button id="openConfigBtn" class="bg-gray-600 text-white px-3 py-2 rounded-xl text-sm font-semibold" title="Personnalisation avancée"><i class="fas fa-cog"></i></button>
+        <button id="darkModeBtn" class="bg-gray-700 text-white px-4 py-2 rounded-xl text-sm font-semibold"><i class="fas fa-moon"></i></button>
+        <button id="printBtn" class="bg-bleu-pro text-white px-4 py-2 rounded-xl text-sm font-semibold"><i class="fas fa-print"></i></button>
+        <button id="pdfBtn" class="bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-semibold"><i class="fas fa-file-pdf"></i></button>
+        <button id="saveBtn" class="bg-jaune-pro text-bleu-pro px-4 py-2 rounded-xl text-sm font-semibold"><i class="fas fa-save"></i></button>
       </div>
     </div>
-
-    <!-- Optimiseur prix / prédiction / scénarios -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-      <div class="bg-white rounded-2xl shadow-sm p-4 card">
-        <h3 class="font-semibold text-bleu-pro"><i class="fas fa-road text-jaune-pro"></i> Price Optimizer (logistique)</h3>
-        <label class="text-sm">Distance (km) <input type="number" id="distance" value="20" step="5" min="0" class="w-full border rounded-lg mt-1 p-1"></label>
-        <label class="text-sm mt-2 block">Coût fixe trajet <input type="number" id="coutTrajet" value="150" step="10" min="0" class="w-full border rounded-lg p-1"></label>
-        <button id="optimizePrice" class="mt-3 w-full bg-bleu-pro text-white py-1 rounded-lg text-sm">Calculer prix optimal</button>
-        <p id="optimalPriceDisplay" class="text-sm mt-2 font-bold text-center text-jaune-pro"></p>
-      </div>
-      <div class="bg-white rounded-2xl shadow-sm p-4 card">
-        <h3 class="font-semibold text-bleu-pro"><i class="fas fa-chart-line text-jaune-pro"></i> Prediction Engine</h3>
-        <p class="text-sm">CA prévu mois prochain : <span id="predictionResult" class="font-bold text-jaune-pro">-- MAD</span></p>
-        <div class="mt-2 space-y-2 text-sm">
-          <button id="scenarioOpti" class="w-full bg-emerald-50 p-2 rounded-lg text-left">📈 Optimiste (+15% qte, -5% CV)</button>
-          <button id="scenarioPessi" class="w-full bg-amber-50 p-2 rounded-lg text-left">📉 Pessimiste (-10% qte, +8% CV)</button>
-          <button id="scenarioEquilibre" class="w-full bg-blue-50 p-2 rounded-lg text-left">🎯 Atteindre seuil rentabilité</button>
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl shadow-sm p-4 card">
-        <h3 class="font-semibold text-bleu-pro"><i class="fas fa-bell text-jaune-pro"></i> Alertes & conseils</h3>
-        <div id="alertes" class="mt-2 space-y-2 text-sm max-h-48 overflow-auto"></div>
-        <div class="mt-2"><label class="text-xs">Webhook URL (WhatsApp/n8n) <input type="url" id="webhookUrl" placeholder="https://votre-n8n.com/webhook" class="w-full border rounded-lg p-1 text-xs"></label>
-        <button id="sendWebhook" class="mt-1 w-full bg-bleu-pro text-white py-1 rounded-lg text-xs">Envoyer alerte</button></div>
-      </div>
-    </div>
-
-    <!-- Graphique + analyse seuil -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-      <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-4 card"><canvas id="graphique" height="200"></canvas></div>
-      <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro">Analyse seuil (MAD)</h3><div id="analyseDetails" class="text-sm space-y-1 mt-2"></div></div>
-    </div>
-
-    <!-- Logs -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 no-print">
-      <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro"><i class="fas fa-history"></i> Journal webhook</h3><div id="webhookLog" class="mt-2 max-h-48 overflow-auto bg-gray-50 rounded-lg p-2 text-xs"></div></div>
-      <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro"><i class="fas fa-edit"></i> Suivi modifications</h3><div id="modificationsLog" class="mt-2 max-h-48 overflow-auto bg-gray-50 rounded-lg p-2 text-xs"></div></div>
-    </div>
-
-    <!-- Rapport détaillé -->
-    <div class="bg-white rounded-2xl shadow-sm p-5 card"><h2 class="text-xl font-bold text-bleu-pro">Rapport d'analyse</h2><div id="rapportTexte" class="text-sm text-gray-700 mt-2 space-y-1"></div></div>
-    <div class="text-center text-gray-400 text-xs mt-6 no-print">© PTM NANO ULTIMATE – Performance Engine v3.0</div>
   </div>
 
-  <script>
-    // ---------- DONNÉES ----------
-    let fixedCharges = [{ name: "Loyer", amount: 8500 }, { name: "Salaires", amount: 12500 }, { name: "Assurances", amount: 1200 }, { name: "Marketing", amount: 2100 }, { name: "Frais admins", amount: 950 }];
-    let chart = null;
-    let webhookHistory = [], modificationHistory = [];
+  <!-- Overlay + Panneau config (caché par défaut) -->
+  <div id="overlay" class="overlay"></div>
+  <div id="configPanel">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold"><i class="fas fa-cogs"></i> Personnalisation avancée</h2>
+      <button id="closeConfigBtn" class="text-red-500 text-2xl">&times;</button>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <label class="font-semibold">Nom du projet</label>
+        <input type="text" id="configNomProjet" class="w-full border rounded p-1 mb-3">
+        <label class="font-semibold">Unité monétaire</label>
+        <input type="text" id="configUniteMonetaire" value="MAD" class="w-full border rounded p-1 mb-3">
+        <label class="font-semibold">Unité de quantité</label>
+        <input type="text" id="configUniteQuantite" value="m³" class="w-full border rounded p-1 mb-3">
+        <label class="font-semibold">Couleur principale</label>
+        <input type="color" id="configCouleurPrincipale" value="#0A2540" class="w-full h-10 mb-3">
+        <label class="font-semibold">Couleur d'accent</label>
+        <input type="color" id="configCouleurAccent" value="#F5A623" class="w-full h-10 mb-3">
+      </div>
+      <div>
+        <label class="font-semibold">Libellé KPI CA</label>
+        <input type="text" id="configKpiCaLabel" value="CA" class="w-full border rounded p-1 mb-2">
+        <label class="font-semibold">Libellé KPI Marge brute</label>
+        <input type="text" id="configKpiMargeLabel" value="Marge brute" class="w-full border rounded p-1 mb-2">
+        <label class="font-semibold">Libellé Taux marge</label>
+        <input type="text" id="configKpiTauxLabel" value="Taux marge" class="w-full border rounded p-1 mb-2">
+        <label class="font-semibold">Libellé Seuil rentabilité</label>
+        <input type="text" id="configKpiSeuilLabel" value="Seuil rentabilité" class="w-full border rounded p-1 mb-2">
+        <label class="font-semibold">Libellé Score pilotage</label>
+        <input type="text" id="configKpiScoreLabel" value="Score pilotage" class="w-full border rounded p-1 mb-2">
+      </div>
+    </div>
+    <div class="mt-4 text-right"><button id="applyConfigBtn" class="bg-bleu-pro text-white px-4 py-2 rounded-lg">Appliquer</button></div>
+  </div>
 
-    // ---------- FONCTIONS UTILITAIRES ----------
-    function addModification(msg) { modificationHistory.unshift({ time: new Date().toLocaleTimeString(), msg }); if(modificationHistory.length>10) modificationHistory.pop(); updateModifLog(); }
-    function updateModifLog() { let div=document.getElementById('modificationsLog'); if(modificationHistory.length===0) div.innerHTML='<div class="text-gray-400">Ajustez les paramètres...</div>'; else div.innerHTML=modificationHistory.map(m=>`<div class="modif-item">[${m.time}] ${m.msg}</div>`).join(''); }
-    function addWebhookLog(status, url, payload) { webhookHistory.unshift({ time: new Date().toLocaleString(), status, url, payload: JSON.stringify(payload).substring(0,200) }); if(webhookHistory.length>5) webhookHistory.pop(); let logDiv=document.getElementById('webhookLog'); if(webhookHistory.length===0) logDiv.innerHTML='<div class="text-gray-400">Aucun envoi</div>'; else logDiv.innerHTML=webhookHistory.map(e=>`<div class="log-entry"><strong>${e.time}</strong> – ${e.status}<br>🔗 ${e.url}<br>${e.payload}...</div>`).join(''); }
-    function getTotalFixes() { return Math.round(fixedCharges.reduce((s,c)=>s+(isNaN(c.amount)?0:c.amount),0)); }
-    function calculActualCost() {
-      let ciment=parseFloat(document.getElementById('coutCiment').value)||0;
-      let gravier=parseFloat(document.getElementById('coutGravier').value)||0;
-      let sable=parseFloat(document.getElementById('coutSable').value)||0;
-      let gazole=parseFloat(document.getElementById('coutGazole').value)||0;
-      let maintenance=parseFloat(document.getElementById('coutMaintenance').value)||0;
-      let mo=parseFloat(document.getElementById('coutMO').value)||0;
-      let cost = (ciment*0.35)+(gravier*0.7)+(sable*0.5)+(gazole*15)+(maintenance/50)+(mo*0.5);
-      let costRounded = Math.round(cost * 100) / 100;
-      document.getElementById('actualCostDisplay').innerText = costRounded.toFixed(2)+" MAD";
-      return costRounded;
-    }
+  <!-- 5 KPI -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
+    <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro"><p id="kpiCaLabel" class="text-gray-500 text-xs">CA</p><p id="kpiCa" class="text-2xl font-extrabold text-bleu-pro">0 MAD</p></div>
+    <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro"><p id="kpiMargeLabel" class="text-gray-500 text-xs">Marge brute</p><p id="kpiMarge" class="text-2xl font-extrabold text-bleu-pro">0 MAD</p></div>
+    <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro"><p id="kpiTauxLabel" class="text-gray-500 text-xs">Taux marge</p><p id="kpiTaux" class="text-2xl font-extrabold text-bleu-pro">0%</p></div>
+    <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-jaune-pro"><p id="kpiSeuilLabel" class="text-gray-500 text-xs">Seuil rentabilité</p><p id="kpiSeuil" class="text-2xl font-extrabold text-jaune-pro">0 MAD</p></div>
+    <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro"><p id="kpiScoreLabel" class="text-gray-500 text-xs">Score pilotage</p><p id="scorePilotage" class="text-2xl font-extrabold">0/100</p></div>
+  </div>
 
-    // Fonction pour créer/mettre à jour le graphique en respectant le dark mode
-    function updateChart(prix, cvReel, totalFixes, qte, seuilQte) {
-      if (chart) chart.destroy();
-      let isDark = document.body.classList.contains('dark');
-      let textColor = isDark ? '#E2E8F0' : '#0A2540';
-      let gridColor = isDark ? '#334155' : '#E2E8F0';
-      let maxQ = Math.max(qte, (seuilQte && isFinite(seuilQte)) ? seuilQte * 1.2 : qte * 1.5, 30);
-      maxQ = Math.ceil(maxQ / 20) * 20;
-      let quantites = [];
-      for (let i=0; i<=maxQ; i+=Math.max(1, Math.floor(maxQ/15))) quantites.push(i);
-      let recettes = quantites.map(q => prix * q);
-      let coutsTotaux = quantites.map(q => (cvReel * q) + totalFixes);
-      const ctx = document.getElementById('graphique').getContext('2d');
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: quantites,
-          datasets: [
-            { label: 'CA (MAD)', data: recettes, borderColor: '#0A2540', backgroundColor: 'transparent', tension: 0.1, pointBackgroundColor: '#0A2540', borderWidth: 2 },
-            { label: 'Coûts totaux (MAD)', data: coutsTotaux, borderColor: '#F5A623', backgroundColor: 'transparent', tension: 0.1, pointBackgroundColor: '#F5A623', borderWidth: 2 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: { legend: { labels: { color: textColor } } },
-          scales: {
-            x: { title: { display: true, text: 'Quantité (m³)', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } },
-            y: { title: { display: true, text: 'MAD', color: textColor }, ticks: { color: textColor }, grid: { color: gridColor } }
-          }
-        }
-      });
-    }
+  <!-- Coûts variables -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+      <div class="flex justify-between"><h2 class="text-lg font-semibold"><i class="fas fa-cubes text-jaune-pro"></i> Coûts variables</h2><button id="ajouterVariable" class="bg-jaune-pro text-bleu-pro px-3 py-1 rounded-lg text-sm">+ Ajouter</button></div>
+      <div id="variablesContainer" class="space-y-2 mt-3 max-h-64 overflow-y-auto"></div>
+      <div class="mt-4 p-3 bg-amber-50 rounded-xl"><span class="font-bold">Coût unitaire réel :</span> <span id="actualCostDisplay" class="font-mono text-jaune-pro text-xl">0</span> <span id="uniteMonetaireSuffixe">MAD</span></div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+      <div class="flex justify-between"><h2 class="text-lg font-semibold"><i class="fas fa-receipt text-jaune-pro"></i> Charges fixes</h2><button id="ajouterCharge" class="bg-jaune-pro text-bleu-pro px-3 py-1 rounded-lg text-sm">+ Ajouter</button></div>
+      <div class="overflow-x-auto max-h-64 overflow-y-auto mt-2"><table class="w-full text-sm"><thead><tr><th>Libellé</th><th>Montant</th><th></th></tr></thead><tbody id="tableFixes"></tbody></table></div>
+      <div class="mt-4 pt-3 border-t flex justify-between font-bold"><span>Total fixes :</span><span id="totalFixes" class="text-jaune-pro">0</span> <span id="uniteMonetaireFixes">MAD</span></div>
+    </div>
+  </div>
 
-    // Rafraîchissement global (KPI, alertes, graphique, prédiction, etc.)
-    function refreshAll() {
-      let prix = parseFloat(document.getElementById('prix').value) || 0;
-      let qte = parseFloat(document.getElementById('qte').value) || 0;
-      let totalFixes = getTotalFixes();
-      let cvReel = calculActualCost();
-      let ca = prix * qte;
-      let totalVar = cvReel * qte;
-      let margeBrute = ca - totalVar;
-      let resultat = margeBrute - totalFixes;
-      let tauxMarge = ca === 0 ? 0 : (margeBrute / ca) * 100;
-      
-      // Arrondi des valeurs pour affichage
-      let caRounded = Math.round(ca);
-      let margeBruteRounded = Math.round(margeBrute);
-      let totalFixesRounded = Math.round(totalFixes);
-      document.getElementById('kpiCa').innerText = caRounded.toLocaleString() + " MAD";
-      document.getElementById('kpiMarge').innerText = margeBruteRounded.toLocaleString() + " MAD";
-      document.getElementById('kpiTaux').innerText = tauxMarge.toFixed(1) + "%";
-      document.getElementById('totalFixes').innerText = totalFixesRounded.toLocaleString() + " MAD";
+  <!-- Autres paramètres -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <label>Prix vente (<span id="unitePrixVente">MAD</span>) <input type="number" id="prix" value="320" step="5" class="w-full border rounded-xl p-2"></label>
+    <label>Quantité (<span id="uniteQuantiteLabel">m³</span>) <input type="number" id="qte" value="400" step="10" class="w-full border rounded-xl p-2"></label>
+    <label>Throughput (<span id="uniteQuantiteLabel2">m³</span>/jour) <input type="number" id="throughput" value="45" step="5" class="w-full border rounded-xl p-2"></label>
+  </div>
 
-      let margeUnitaire = prix - cvReel;
-      let valide = (margeUnitaire > 0);
-      let seuilCa = 0, seuilQte = 0;
-      if (valide) {
-        seuilQte = totalFixes / margeUnitaire;
-        seuilCa = seuilQte * prix;
-      }
-      let seuilCaRounded = Math.round(seuilCa);
-      document.getElementById('kpiSeuil').innerText = (valide && isFinite(seuilCa)) ? seuilCaRounded.toLocaleString() + " MAD" : "N/A";
-      
-      let margeSec = ca - seuilCa;
-      let ratioSec = ca === 0 ? 0 : (margeSec / ca) * 100;
-      let score = 0;
-      if (tauxMarge >= 30) score += 25;
-      else if (tauxMarge >= 20) score += 15;
-      else score += 5;
-      if (valide && qte >= seuilQte) score += 30;
-      else if (valide && qte >= seuilQte * 0.8) score += 10;
-      if (resultat > 0) score += 25;
-      if (margeUnitaire > 0 && (prix / cvReel) > 1.5) score += 20;
-      score = Math.min(100, score);
-      document.getElementById('scorePilotage').innerText = score + "/100";
-      
-      let levier = (margeBrute !== 0 && resultat !== 0) ? (margeBrute / resultat).toFixed(2) : "N/A";
-      let pointMortJours = (valide && isFinite(seuilQte) && qte > 0) ? (seuilQte / qte) * 30 : 0;
-      let pointMortAff = (pointMortJours > 0 && pointMortJours <= 30) ? pointMortJours.toFixed(1) + " jours" : (pointMortJours > 30 ? ">30j" : "N/A");
-      
-      document.getElementById('analyseDetails').innerHTML = `
-        <div>Seuil qté : ${valide ? Math.ceil(seuilQte) : 'N/A'} m³</div>
-        <div>CA critique : ${valide ? Math.round(seuilCa).toLocaleString() : 'N/A'} MAD</div>
-        <div>Marge sécurité : ${valide ? Math.round(margeSec).toLocaleString() : 'N/A'} MAD (${valide ? ratioSec.toFixed(1) : '0'}%)</div>
-        <div>Point mort : ${pointMortAff}</div>
-        <div>Levier : ${levier}</div>`;
-      
-      document.getElementById('rapportTexte').innerHTML = `
-        <p>📊 CA: ${Math.round(ca).toLocaleString()} MAD | Résultat: ${Math.round(resultat).toLocaleString()} MAD | Taux marge: ${tauxMarge.toFixed(1)}% | Score: ${score}/100</p>
-        <p>${resultat < 0 ? "⚠️ Perte, réduisez les coûts fixes ou augmentez le volume." : "✅ Bénéfice, surveillez l’évolution."}</p>`;
-      
-      // Prédiction (avec arrondi)
-      let throughput = parseFloat(document.getElementById('throughput').value) || 0;
-      let predictedQty = (qte * 0.7) + (throughput * 30 * 0.3);
-      let predictedCA = Math.round(predictedQty * prix);
-      document.getElementById('predictionResult').innerHTML = predictedCA.toLocaleString() + " MAD";
-      
-      // Alertes internes
-      let alerts = [];
-      if (margeUnitaire <= 0) alerts.push("🔴 Marge unitaire négative !");
-      if (valide && qte < seuilQte) alerts.push(`🟡 Quantité sous seuil (${Math.ceil(seuilQte)} m³ requis)`);
-      if (tauxMarge < 20) alerts.push("🟡 Taux marge faible (<20%)");
-      if (resultat < 0) alerts.push("🔴 Résultat net négatif");
-      if (alerts.length === 0) alerts.push("🟢 Tous les indicateurs sont au vert");
-      document.getElementById('alertes').innerHTML = alerts.map(a => `<div class="p-2 rounded-lg ${a.includes('🔴')?'bg-red-100 border-l-4 border-red-500':a.includes('🟡')?'bg-amber-100 border-l-4 border-amber-500':'bg-emerald-100 border-l-4 border-emerald-500'}">${a}</div>`).join('');
-      
-      // Mise à jour du graphique avec les couleurs adaptées
-      updateChart(prix, cvReel, totalFixes, qte, seuilQte);
-      
-      saveToLocal();  // sauvegarde automatique après chaque changement
-    }
+  <!-- Optimiseur + Alertes -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm p-4">
+      <h3 class="font-semibold"><i class="fas fa-road text-jaune-pro"></i> Price Optimizer</h3>
+      <label>Distance (km) <input type="number" id="distance" value="20" class="w-full border rounded-lg p-1"></label>
+      <label>Coût fixe trajet (<span class="uniteTexte">MAD</span>) <input type="number" id="coutTrajet" value="150" class="w-full border rounded-lg p-1"></label>
+      <button id="optimizePrice" class="mt-2 w-full bg-bleu-pro text-white py-1 rounded-lg">Prix optimal</button>
+      <p id="optimalPriceDisplay" class="text-sm mt-2 font-bold text-center text-jaune-pro"></p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-4">
+      <h3 class="font-semibold"><i class="fas fa-bell text-jaune-pro"></i> Alertes & conseils</h3>
+      <div id="alertes" class="mt-2 space-y-1 text-sm max-h-48 overflow-auto"></div>
+      <div class="mt-3"><label class="text-xs">Webhook URL <input type="url" id="webhookUrl" class="w-full border rounded-lg p-1 text-xs"></label>
+      <button id="sendWebhook" class="mt-1 w-full bg-bleu-pro text-white py-1 rounded-lg text-xs">Envoyer alerte</button></div>
+    </div>
+  </div>
 
-    // Gestion du tableau des charges fixes
-    function renderFixedTable() {
-      let tbody = document.getElementById('tableFixes');
-      tbody.innerHTML = '';
-      fixedCharges.forEach((c, idx) => {
-        let tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><input type="text" value="${c.name.replace(/[&<>]/g, '')}" data-idx="${idx}" class="charge-name w-full bg-transparent"></td>
-          <td><input type="number" value="${Math.round(c.amount)}" data-idx="${idx}" class="charge-amount w-24 border rounded px-1"></td>
-          <td><button data-idx="${idx}" class="delCharge text-red-500"><i class="fas fa-trash"></i></button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-      document.querySelectorAll('.charge-name').forEach(inp => inp.addEventListener('change', (e) => { let idx = e.target.dataset.idx; fixedCharges[idx].name = e.target.value; refreshAll(); }));
-      document.querySelectorAll('.charge-amount').forEach(inp => inp.addEventListener('input', (e) => { let idx = e.target.dataset.idx; fixedCharges[idx].amount = Math.round(parseFloat(e.target.value) || 0); refreshAll(); }));
-      document.querySelectorAll('.delCharge').forEach(btn => btn.addEventListener('click', (e) => { let idx = btn.dataset.idx; fixedCharges.splice(idx, 1); renderFixedTable(); refreshAll(); }));
-      refreshAll();
-    }
+  <!-- Graphique + Analyse -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-4"><canvas id="graphique" height="200"></canvas></div>
+    <div class="bg-white rounded-2xl shadow-sm p-4"><h3 class="font-semibold">Analyse seuil</h3><div id="analyseDetails" class="text-sm mt-2"></div></div>
+  </div>
 
-    // ---------- STOCKAGE (compatible aperçu Claude.ai + navigateur classique) ----------
-    const STORAGE_KEY = 'ptmNanoUltimate';
-    let autoSaveTimer = null;
+  <!-- Rapport -->
+  <div class="bg-white rounded-2xl shadow-sm p-5"><h2 class="text-xl font-bold">Rapport d'analyse</h2><div id="rapportTexte" class="text-sm mt-2"></div></div>
+  <div class="text-center text-gray-400 text-xs mt-6">© PTM FLEX – Configuration avancée cachée</div>
+</div>
 
-    async function storageSet(key, value) {
-      if (window.storage && typeof window.storage.set === 'function') {
-        try { await window.storage.set(key, value); return true; } catch (e) { /* on bascule sur localStorage */ }
-      }
-      try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
-    }
+<script>
+  // ---------- DONNÉES FLEXIBLES ----------
+  let variables = [
+    { nom: "Ciment", coefficient: 0.35, valeur: 120, unite: "t" },
+    { nom: "Gravier", coefficient: 0.7, valeur: 80, unite: "t" },
+    { nom: "Sable", coefficient: 0.5, valeur: 40, unite: "t" },
+    { nom: "Gazole", coefficient: 15, valeur: 11, unite: "L" },
+    { nom: "Maintenance", coefficient: 0.02, valeur: 200, unite: "€" },
+    { nom: "Main d'œuvre", coefficient: 0.5, valeur: 60, unite: "h" }
+  ];
+  let fixedCharges = [{ name: "Loyer", amount: 8500 }, { name: "Salaires", amount: 12500 }, { name: "Assurances", amount: 1200 }, { name: "Marketing", amount: 2100 }, { name: "Frais admins", amount: 950 }];
+  let chart = null;
+  let config = {
+    projetNom: "PTM FLEX", uniteMonetaire: "MAD", uniteQuantite: "m³",
+    couleurPrincipale: "#0A2540", couleurAccent: "#F5A623",
+    libelleCa: "CA", libelleMarge: "Marge brute", libelleTaux: "Taux marge",
+    libelleSeuil: "Seuil rentabilité", libelleScore: "Score pilotage"
+  };
 
-    async function storageGet(key) {
-      if (window.storage && typeof window.storage.get === 'function') {
-        try { const r = await window.storage.get(key); return r ? r.value : null; } catch (e) { /* on bascule sur localStorage */ }
-      }
-      try { return localStorage.getItem(key); } catch (e) { return null; }
-    }
+  function safeNumber(val, def=0) { let n = parseFloat(val); return isNaN(n) ? def : n; }
+  function getTotalFixes() { return fixedCharges.reduce((s,c)=> s + safeNumber(c.amount),0); }
+  function calculActualCost() { return variables.reduce((s,v)=> s + (safeNumber(v.coefficient) * safeNumber(v.valeur)), 0); }
 
-    function collectFormData() {
-      return {
-        prix: document.getElementById('prix').value,
-        qte: document.getElementById('qte').value,
-        coutCiment: document.getElementById('coutCiment').value,
-        coutGravier: document.getElementById('coutGravier').value,
-        coutSable: document.getElementById('coutSable').value,
-        coutGazole: document.getElementById('coutGazole').value,
-        coutMaintenance: document.getElementById('coutMaintenance').value,
-        coutMO: document.getElementById('coutMO').value,
-        throughput: document.getElementById('throughput').value,
-        fixedCharges: fixedCharges,
-        darkMode: document.body.classList.contains('dark')
-      };
-    }
+  function refreshAll() {
+    let prix = safeNumber(document.getElementById('prix').value);
+    let qte = safeNumber(document.getElementById('qte').value);
+    let totalFixes = getTotalFixes();
+    let cvReel = calculActualCost();
+    let ca = prix * qte;
+    let totalVar = cvReel * qte;
+    let margeBrute = ca - totalVar;
+    let resultat = margeBrute - totalFixes;
+    let tauxMarge = ca === 0 ? 0 : (margeBrute / ca) * 100;
+    document.getElementById('kpiCa').innerHTML = Math.round(ca).toLocaleString() + " " + config.uniteMonetaire;
+    document.getElementById('kpiMarge').innerHTML = Math.round(margeBrute).toLocaleString() + " " + config.uniteMonetaire;
+    document.getElementById('kpiTaux').innerHTML = tauxMarge.toFixed(1) + "%";
+    document.getElementById('totalFixes').innerHTML = Math.round(totalFixes).toLocaleString();
+    let margeUnitaire = prix - cvReel;
+    let valide = margeUnitaire > 0;
+    let seuilQte = valide ? totalFixes / margeUnitaire : 0;
+    let seuilCa = seuilQte * prix;
+    document.getElementById('kpiSeuil').innerHTML = (valide && isFinite(seuilCa)) ? Math.round(seuilCa).toLocaleString() + " " + config.uniteMonetaire : "N/A";
+    let score = 0;
+    if (tauxMarge >= 30) score += 25; else if (tauxMarge >= 20) score += 15; else score += 5;
+    if (valide && qte >= seuilQte) score += 30; else if (valide && qte >= seuilQte*0.8) score += 10;
+    if (resultat > 0) score += 25;
+    if (margeUnitaire > 0 && (prix/cvReel) > 1.5) score += 20;
+    score = Math.min(100, score);
+    document.getElementById('scorePilotage').innerHTML = score + "/100";
+    document.getElementById('analyseDetails').innerHTML = `
+      <div>Seuil qté : ${valide ? Math.ceil(seuilQte) : 'N/A'} ${config.uniteQuantite}</div>
+      <div>CA critique : ${valide ? Math.round(seuilCa).toLocaleString() : 'N/A'} ${config.uniteMonetaire}</div>
+      <div>Marge sécurité : ${valide ? Math.round(ca - seuilCa).toLocaleString() : 'N/A'} ${config.uniteMonetaire}</div>
+      <div>Point mort : ${(valide && qte>0) ? ((seuilQte/qte)*30).toFixed(1)+' jours' : 'N/A'}</div>`;
+    document.getElementById('rapportTexte').innerHTML = `<p>CA: ${Math.round(ca).toLocaleString()} ${config.uniteMonetaire} | Résultat: ${Math.round(resultat).toLocaleString()} ${config.uniteMonetaire} | Taux marge: ${tauxMarge.toFixed(1)}%</p>`;
+    let alerts = [];
+    if (margeUnitaire <= 0) alerts.push("🔴 Marge unitaire négative");
+    if (valide && qte < seuilQte) alerts.push(`🟡 Qté sous seuil (${Math.ceil(seuilQte)} ${config.uniteQuantite})`);
+    if (tauxMarge < 20) alerts.push("🟡 Taux marge faible");
+    if (resultat < 0) alerts.push("🔴 Résultat net négatif");
+    if (alerts.length===0) alerts.push("🟢 Tous verts");
+    let alertDiv = document.getElementById('alertes'); alertDiv.innerHTML = "";
+    alerts.forEach(a => { let d = document.createElement('div'); d.className = "p-1 rounded"; d.innerText = a; alertDiv.appendChild(d); });
+    updateChart(prix, cvReel, totalFixes, qte, seuilQte);
+    saveToLocal();
+  }
 
-    // Sauvegarde manuelle (bouton "Sauvegarder") : immédiate et journalisée
-    async function saveToLocal() {
-      clearTimeout(autoSaveTimer);
-      await storageSet(STORAGE_KEY, JSON.stringify(collectFormData()));
-      addModification("Configuration sauvegardée");
-    }
-
-    // Sauvegarde automatique (à chaque saisie) : différée et silencieuse
-    function autoSave() {
-      clearTimeout(autoSaveTimer);
-      autoSaveTimer = setTimeout(() => { storageSet(STORAGE_KEY, JSON.stringify(collectFormData())); }, 800);
-    }
-
-    async function loadFromLocal() {
-      let raw = await storageGet(STORAGE_KEY);
-      if (raw) {
-        let c = JSON.parse(raw);
-        if (c.prix) document.getElementById('prix').value = c.prix;
-        if (c.qte) document.getElementById('qte').value = c.qte;
-        if (c.coutCiment) document.getElementById('coutCiment').value = c.coutCiment;
-        if (c.coutGravier) document.getElementById('coutGravier').value = c.coutGravier;
-        if (c.coutSable) document.getElementById('coutSable').value = c.coutSable;
-        if (c.coutGazole) document.getElementById('coutGazole').value = c.coutGazole;
-        if (c.coutMaintenance) document.getElementById('coutMaintenance').value = c.coutMaintenance;
-        if (c.coutMO) document.getElementById('coutMO').value = c.coutMO;
-        if (c.throughput) document.getElementById('throughput').value = c.throughput;
-        if (c.fixedCharges) fixedCharges = c.fixedCharges;
-        if (c.darkMode) document.body.classList.add('dark');
-        renderFixedTable();
-        refreshAll();
-        addModification("Chargement depuis sauvegarde");
-      }
-    }
-
-    // Génération PDF multi-pages avec arrondi des chiffres
-    async function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const element = document.getElementById('appContainer');
-      const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff' });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      while (heightLeft > 0) {
-        position -= pageHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-      pdf.save(`PTM_NANO_${new Date().toISOString().slice(0,19)}.pdf`);
-    }
-
-    // Envoi d'alerte vers webhook
-    async function sendAlertToWebhook(message) {
-      let url = document.getElementById('webhookUrl').value.trim();
-      if (!url) return;
-      let kpiCa = document.getElementById('kpiCa').innerText;
-      let payload = { type: 'alerte', message, timestamp: new Date().toISOString(), kpis: { ca: kpiCa } };
-      try {
-        let r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        addWebhookLog(r.ok ? "✅ Envoyé" : "❌ Erreur " + r.status, url, payload);
-      } catch(e) { addWebhookLog("❌ Échec réseau", url, payload); }
-    }
-
-    // Gestion du Dark Mode + mise à jour du graphique
-    function toggleDarkMode() {
-      document.body.classList.toggle('dark');
-      // Reconstruire le graphique avec les nouvelles couleurs
-      let prix = parseFloat(document.getElementById('prix').value) || 0;
-      let cvReel = calculActualCost();
-      let totalFixes = getTotalFixes();
-      let qte = parseFloat(document.getElementById('qte').value) || 0;
-      let margeUnitaire = prix - cvReel;
-      let seuilQte = (margeUnitaire > 0) ? totalFixes / margeUnitaire : 0;
-      updateChart(prix, cvReel, totalFixes, qte, seuilQte);
-    }
-
-    // Événements
-    document.getElementById('saveBtn').addEventListener('click', () => saveToLocal());
-    document.getElementById('loadBtn').addEventListener('click', () => loadFromLocal());
-    document.getElementById('printBtn').addEventListener('click', () => window.print());
-    document.getElementById('pdfBtn').addEventListener('click', generatePDF);
-    document.getElementById('ajouterCharge').addEventListener('click', () => { fixedCharges.push({ name: "Nouvelle charge", amount: 0 }); renderFixedTable(); refreshAll(); });
-    document.getElementById('optimizePrice').addEventListener('click', () => {
-      let distance = parseFloat(document.getElementById('distance').value) || 0;
-      let coutTrajet = parseFloat(document.getElementById('coutTrajet').value) || 0;
-      let cvReel = calculActualCost();
-      let coutLog = coutTrajet + (distance * 4.5);
-      let prixOpti = (cvReel + coutLog) / 0.75;
-      document.getElementById('optimalPriceDisplay').innerHTML = `Prix recommandé : ${Math.round(prixOpti)} MAD/m³ (marge 25%)`;
+  function updateChart(prix, cvReel, totalFixes, qte, seuilQte) {
+    if (chart) chart.destroy();
+    let isDark = document.body.classList.contains('dark');
+    let textColor = isDark ? '#E2E8F0' : config.couleurPrincipale;
+    let maxQ = Math.max(qte, (seuilQte && isFinite(seuilQte)) ? seuilQte * 1.2 : qte * 1.5, 30);
+    maxQ = Math.ceil(maxQ / 20) * 20;
+    let quantites = [];
+    for (let i=0; i<=maxQ; i+=Math.max(1, Math.floor(maxQ/15))) quantites.push(i);
+    let recettes = quantites.map(q => prix * q);
+    let coutsTotaux = quantites.map(q => (cvReel * q) + totalFixes);
+    const ctx = document.getElementById('graphique').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: quantites, datasets: [
+        { label: 'CA ('+config.uniteMonetaire+')', data: recettes, borderColor: config.couleurPrincipale, backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 },
+        { label: 'Coûts totaux ('+config.uniteMonetaire+')', data: coutsTotaux, borderColor: config.couleurAccent, backgroundColor: 'transparent', tension: 0.1, borderWidth: 2 }
+      ]},
+      options: { responsive: true, plugins: { legend: { labels: { color: textColor } } }, scales: { x: { ticks: { color: textColor } }, y: { ticks: { color: textColor } } } }
     });
-    document.getElementById('sendWebhook').addEventListener('click', () => {
-      let firstAlert = document.querySelector('#alertes div:first-child')?.innerText || "Alerte manuelle";
-      sendAlertToWebhook(firstAlert);
-    });
-    document.getElementById('scenarioOpti').addEventListener('click', () => {
-      let qteInput = document.getElementById('qte');
-      qteInput.value = Math.round(parseFloat(qteInput.value) * 1.15);
-      refreshAll();
-    });
-    document.getElementById('scenarioPessi').addEventListener('click', () => {
-      let qteInput = document.getElementById('qte');
-      qteInput.value = Math.round(parseFloat(qteInput.value) * 0.9);
-      refreshAll();
-    });
-    document.getElementById('scenarioEquilibre').addEventListener('click', () => {
-      let prix = parseFloat(document.getElementById('prix').value);
-      let cv = calculActualCost();
-      let totalF = getTotalFixes();
-      let margeU = prix - cv;
-      if (margeU > 0) {
-        let qteSeuil = Math.ceil(totalF / margeU);
-        document.getElementById('qte').value = qteSeuil;
-        refreshAll();
-      } else alert("Marge unitaire négative – impossible d’atteindre le seuil.");
-    });
-    document.getElementById('darkModeBtn').addEventListener('click', toggleDarkMode);
+  }
 
-    // Écouteurs sur tous les champs métier
-    document.querySelectorAll('#coutCiment,#coutGravier,#coutSable,#coutGazole,#coutMaintenance,#coutMO,#prix,#qte,#throughput').forEach(inp => inp.addEventListener('input', () => refreshAll()));
-
-    // Initialisation
-    renderFixedTable();
-    loadFromLocal();
+  function renderVariables() {
+    let container = document.getElementById('variablesContainer'); container.innerHTML = '';
+    variables.forEach((v, idx) => {
+      let div = document.createElement('div'); div.className = "flex flex-wrap gap-2 items-center border-b pb-2";
+      div.innerHTML = `<input type="text" value="${v.nom}" data-idx="${idx}" class="var-name w-28 border rounded p-1 text-sm">
+        <input type="number" value="${v.coefficient}" step="0.05" data-idx="${idx}" class="var-coef w-20 border rounded p-1 text-sm">
+        <input type="number" value="${v.valeur}" step="5" data-idx="${idx}" class="var-val w-24 border rounded p-1 text-sm">
+        <input type="text" value="${v.unite}" data-idx="${idx}" class="var-unite w-16 border rounded p-1 text-sm">
+        <button data-idx="${idx}" class="delVar text-red-500"><i class="fas fa-trash"></i></button>`;
+      container.appendChild(div);
+    });
+    document.querySelectorAll('.var-name').forEach(inp => inp.addEventListener('change', (e) => { variables[e.target.dataset.idx].nom = e.target.value; refreshAll(); }));
+    document.querySelectorAll('.var-coef').forEach(inp => inp.addEventListener('input', (e) => { variables[e.target.dataset.idx].coefficient = safeNumber(e.target.value); refreshAll(); }));
+    document.querySelectorAll('.var-val').forEach(inp => inp.addEventListener('input', (e) => { variables[e.target.dataset.idx].valeur = safeNumber(e.target.value); refreshAll(); }));
+    document.querySelectorAll('.var-unite').forEach(inp => inp.addEventListener('change', (e) => { variables[e.target.dataset.idx].unite = e.target.value; refreshAll(); }));
+    document.querySelectorAll('.delVar').forEach(btn => btn.addEventListener('click', (e) => { variables.splice(btn.dataset.idx, 1); renderVariables(); refreshAll(); }));
     refreshAll();
-  </script>
+  }
+
+  function renderFixedTable() {
+    let tbody = document.getElementById('tableFixes'); tbody.innerHTML = '';
+    fixedCharges.forEach((c, idx) => {
+      let tr = document.createElement('tr');
+      tr.innerHTML = `<td><input type="text" value="${c.name}" data-idx="${idx}" class="charge-name w-full"></td><td><input type="number" value="${c.amount}" data-idx="${idx}" class="charge-amount w-24 border rounded px-1"></td><td><button data-idx="${idx}" class="delCharge text-red-500"><i class="fas fa-trash"></i></button></td>`;
+      tbody.appendChild(tr);
+    });
+    document.querySelectorAll('.charge-name').forEach(inp => inp.addEventListener('change', (e) => { fixedCharges[e.target.dataset.idx].name = e.target.value; refreshAll(); }));
+    document.querySelectorAll('.charge-amount').forEach(inp => inp.addEventListener('input', (e) => { fixedCharges[e.target.dataset.idx].amount = safeNumber(e.target.value); refreshAll(); }));
+    document.querySelectorAll('.delCharge').forEach(btn => btn.addEventListener('click', (e) => { fixedCharges.splice(btn.dataset.idx, 1); renderFixedTable(); refreshAll(); }));
+    refreshAll();
+  }
+
+  function applyConfig() {
+    config.projetNom = document.getElementById('configNomProjet').value || "Projet";
+    config.uniteMonetaire = document.getElementById('configUniteMonetaire').value || "MAD";
+    config.uniteQuantite = document.getElementById('configUniteQuantite').value || "m³";
+    config.couleurPrincipale = document.getElementById('configCouleurPrincipale').value;
+    config.couleurAccent = document.getElementById('configCouleurAccent').value;
+    config.libelleCa = document.getElementById('configKpiCaLabel').value;
+    config.libelleMarge = document.getElementById('configKpiMargeLabel').value;
+    config.libelleTaux = document.getElementById('configKpiTauxLabel').value;
+    config.libelleSeuil = document.getElementById('configKpiSeuilLabel').value;
+    config.libelleScore = document.getElementById('configKpiScoreLabel').value;
+
+    document.getElementById('projetNom').innerText = config.projetNom;
+    document.getElementById('uniteMonetaireLabel').innerText = config.uniteMonetaire;
+    document.getElementById('uniteMonetaireSuffixe').innerText = config.uniteMonetaire;
+    document.getElementById('uniteMonetaireFixes').innerText = config.uniteMonetaire;
+    document.getElementById('unitePrixVente').innerText = config.uniteMonetaire;
+    document.getElementById('uniteQuantiteLabel').innerText = config.uniteQuantite;
+    document.getElementById('uniteQuantiteLabel2').innerText = config.uniteQuantite;
+    document.querySelectorAll('.uniteTexte').forEach(el => el.innerText = config.uniteMonetaire);
+    document.getElementById('kpiCaLabel').innerText = config.libelleCa;
+    document.getElementById('kpiMargeLabel').innerText = config.libelleMarge;
+    document.getElementById('kpiTauxLabel').innerText = config.libelleTaux;
+    document.getElementById('kpiSeuilLabel').innerText = config.libelleSeuil;
+    document.getElementById('kpiScoreLabel').innerText = config.libelleScore;
+    document.querySelectorAll('.bg-bleu-pro').forEach(el => el.style.backgroundColor = config.couleurPrincipale);
+    document.querySelectorAll('.text-bleu-pro').forEach(el => el.style.color = config.couleurPrincipale);
+    document.querySelectorAll('.border-bleu-pro').forEach(el => el.style.borderColor = config.couleurPrincipale);
+    document.querySelectorAll('.bg-jaune-pro').forEach(el => el.style.backgroundColor = config.couleurAccent);
+    document.querySelectorAll('.text-jaune-pro').forEach(el => el.style.color = config.couleurAccent);
+    document.querySelectorAll('.border-jaune-pro').forEach(el => el.style.borderColor = config.couleurAccent);
+    refreshAll();
+    closeConfig();
+  }
+
+  function openConfig() { document.body.classList.add('config-open'); }
+  function closeConfig() { document.body.classList.remove('config-open'); }
+
+  const STORAGE_KEY = 'ptmFlexUltimate';
+  function saveToLocal() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      variables, fixedCharges, config,
+      prix: document.getElementById('prix').value,
+      qte: document.getElementById('qte').value,
+      throughput: document.getElementById('throughput').value,
+      darkMode: document.body.classList.contains('dark')
+    }));
+  }
+  function loadFromLocal() {
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      let d = JSON.parse(raw);
+      if (d.variables) variables = d.variables;
+      if (d.fixedCharges) fixedCharges = d.fixedCharges;
+      if (d.config) { config = {...config, ...d.config}; applyConfig(); }
+      if (d.prix) document.getElementById('prix').value = d.prix;
+      if (d.qte) document.getElementById('qte').value = d.qte;
+      if (d.throughput) document.getElementById('throughput').value = d.throughput;
+      if (d.darkMode) document.body.classList.add('dark');
+      renderVariables(); renderFixedTable(); refreshAll();
+    }
+  }
+
+  document.getElementById('openConfigBtn').addEventListener('click', openConfig);
+  document.getElementById('closeConfigBtn').addEventListener('click', closeConfig);
+  document.getElementById('overlay').addEventListener('click', closeConfig);
+  document.getElementById('applyConfigBtn').addEventListener('click', applyConfig);
+  document.getElementById('ajouterVariable').addEventListener('click', () => { variables.push({ nom: "Nouveau", coefficient: 0.1, valeur: 0, unite: "unité" }); renderVariables(); });
+  document.getElementById('ajouterCharge').addEventListener('click', () => { fixedCharges.push({ name: "Nouvelle charge", amount: 0 }); renderFixedTable(); });
+  document.getElementById('optimizePrice').addEventListener('click', () => {
+    let dist = safeNumber(document.getElementById('distance').value);
+    let trajet = safeNumber(document.getElementById('coutTrajet').value);
+    let cv = calculActualCost();
+    let prixOpti = (cv + trajet + dist*4.5) / 0.75;
+    document.getElementById('optimalPriceDisplay').innerHTML = `Prix recommandé : ${Math.round(prixOpti)} ${config.uniteMonetaire}/m³ (marge 25%)`;
+  });
+  document.getElementById('sendWebhook').addEventListener('click', async () => {
+    let url = document.getElementById('webhookUrl').value.trim();
+    if (!url) return;
+    let payload = { alert: document.querySelector('#alertes div:first-child')?.innerText || "Alerte", timestamp: new Date().toISOString() };
+    try { await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }); } catch(e) {}
+  });
+  document.getElementById('darkModeBtn').addEventListener('click', () => { document.body.classList.toggle('dark'); refreshAll(); });
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+  document.getElementById('pdfBtn').addEventListener('click', async () => {
+    const { jsPDF } = window.jspdf;
+    const canvas = await html2canvas(document.getElementById('appContainer'), { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    pdf.addImage(imgData, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
+    pdf.save('ptm_flex_report.pdf');
+  });
+  document.getElementById('saveBtn').addEventListener('click', () => { saveToLocal(); alert("Configuration sauvegardée"); });
+  document.getElementById('prix').addEventListener('input', refreshAll);
+  document.getElementById('qte').addEventListener('input', refreshAll);
+  document.getElementById('throughput').addEventListener('input', refreshAll);
+
+  renderVariables(); renderFixedTable(); loadFromLocal(); refreshAll();
+</script>
 </body>
 </html>
