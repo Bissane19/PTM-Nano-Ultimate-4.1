@@ -1,0 +1,42 @@
+﻿// ---------- STOCKAGE (compatible aperçu Claude.ai + navigateur) ----------
+    const STORAGE_KEY = 'ptmNanoUltimate';
+    let autoSaveTimer = null;
+
+    async function storageSet(key, value) {
+      if (window.storage && typeof window.storage.set === 'function') {
+        try { await window.storage.set(key, value); return true; } catch (e) {}
+      }
+      try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
+    }
+
+    async function storageGet(key) {
+      if (window.storage && typeof window.storage.get === 'function') {
+        try { const r = await window.storage.get(key); return r ? r.value : null; } catch (e) {}
+      }
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+
+    function collectFormData() {
+      return {
+        prix: document.getElementById('prix').value,
+        qte: document.getElementById('qte').value,
+        coutCiment: document.getElementById('coutCiment').value,
+        coutGravier: document.getElementById('coutGravier').value,
+        coutSable: document.getElementById('coutSable').value,
+        coutGazole: document.getElementById('coutGazole').value,
+        coutMaintenance: document.getElementById('coutMaintenance').value,
+        coutMO: document.getElementById('coutMO').value,
+        throughput: document.getElementById('throughput').value,
+        fixedCharges: fixedCharges,
+        darkMode: document.body.classList.contains('dark')
+      };
+    }
+
+    // Sauvegarde manuelle (bouton) : immédiate + journalisée
+    async function saveToLocal() {
+      clearTimeout(autoSaveTimer);
+      await storageSet(STORAGE_KEY, JSON.stringify(collectFormData()));
+      addModification("Configuration sauvegardée");
+    }
+
+…
