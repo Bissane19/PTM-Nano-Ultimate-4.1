@@ -1,42 +1,169 @@
-// ---------- STOCKAGE (compatible aperçu Claude.ai + navigateur) ----------
-    const STORAGE_KEY = 'ptmNanoUltimate';
-    let autoSaveTimer = null;
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PTM NANO ULTIMATE – Performance Engine v3.0</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #F0F4F8; transition: background 0.3s, color 0.3s; }
+    body.dark { background: #0F172A; color: #E2E8F0; }
+    body.dark .bg-white, body.dark .card, body.dark .bg-gray-50, body.dark .bg-gray-100, body.dark .bg-gray-200 { background-color: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
+    body.dark input, body.dark select, body.dark textarea { background-color: #0F172A; color: #E2E8F0; border-color: #475569; }
+    body.dark .bg-amber-50, body.dark .bg-emerald-50, body.dark .bg-blue-50, body.dark .bg-red-100, body.dark .bg-amber-100, body.dark .bg-emerald-100 { background-color: #2D3748 !important; color: #E2E8F0 !important; }
+    .bg-bleu-pro { background-color: #0A2540; }
+    .text-bleu-pro { color: #0A2540; }
+    .bg-jaune-pro { background-color: #F5A623; }
+    .text-jaune-pro { color: #F5A623; }
+    .btn-pro { transition: all 0.2s ease; }
+    .btn-pro:hover { transform: translateY(-2px); filter: brightness(105%); }
+    .card-pro { transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #E2E8F0; }
+    .card-pro:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -12px rgba(0,0,0,0.1); }
+    .log-entry { font-family: monospace; font-size: 0.7rem; padding: 4px; border-bottom: 1px solid #E2E8F0; }
+    body.dark .log-entry { border-bottom-color: #334155; }
+    .modif-item { background: #FEF9E6; padding: 4px 8px; border-radius: 8px; font-size: 0.7rem; margin: 2px; border-left: 3px solid #F5A623; }
+    body.dark .modif-item { background: #2D3748; border-left-color: #F5A623; }
+    .perf-led { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; background-color: #F5A623; }
+    @keyframes pulse { 0% { opacity: 0.4; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1.2); } }
+    @media print { .no-print { display: none !important; } }
+  </style>
+</head>
+<body class="text-gray-800">
+  <div class="container mx-auto px-4 py-6 max-w-7xl" id="appContainer">
+    <div class="bg-white rounded-2xl shadow-md mb-6 overflow-hidden border-t-4 border-jaune-pro card">
+      <div class="flex flex-wrap justify-between items-center p-4">
+        <div class="flex items-center gap-4">
+          <div class="bg-bleu-pro rounded-xl p-2 shadow-sm"><i class="fas fa-microchip text-jaune-pro text-2xl"></i></div>
+          <div>
+            <div class="flex items-center gap-2"><span class="text-xl font-extrabold text-bleu-pro">PTM NANO</span><span class="text-xs bg-jaune-pro text-bleu-pro px-2 py-0.5 rounded-full font-semibold">ULTIMATE</span></div>
+            <div class="flex items-center gap-3 mt-1"><span class="text-xs text-gray-500"><i class="fas fa-bolt text-jaune-pro"></i> n8n Ready</span><span class="text-xs text-gray-500"><i class="fas fa-chart-line text-jaune-pro"></i> Real-time</span><span class="text-xs text-gray-500"><span class="perf-led"></span> Live Sync</span></div>
+          </div>
+        </div>
+        <div class="flex gap-2 no-print mt-2 md:mt-0">
+          <button id="darkModeBtn" class="bg-gray-700 text-white px-4 py-2 rounded-xl text-sm font-semibold btn-pro shadow-sm"><i class="fas fa-moon"></i> Dark</button>
+          <button id="printBtn" class="bg-bleu-pro text-white px-4 py-2 rounded-xl text-sm font-semibold btn-pro shadow-sm"><i class="fas fa-print"></i> Imprimer</button>
+          <button id="pdfBtn" class="bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-semibold btn-pro shadow-sm"><i class="fas fa-file-pdf"></i> PDF</button>
+          <button id="saveBtn" class="bg-jaune-pro text-bleu-pro px-4 py-2 rounded-xl text-sm font-semibold btn-pro shadow-sm"><i class="fas fa-save"></i> Sauvegarder</button>
+          <button id="loadBtn" class="border border-bleu-pro text-bleu-pro bg-white px-4 py-2 rounded-xl text-sm font-semibold btn-pro"><i class="fas fa-upload"></i> Charger</button>
+        </div>
+      </div>
+    </div>
 
-    async function storageSet(key, value) {
-      if (window.storage && typeof window.storage.set === 'function') {
-        try { await window.storage.set(key, value); return true; } catch (e) {}
-      }
-      try { localStorage.setItem(key, value); return true; } catch (e) { return false; }
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
+      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">CA</p><p id="kpiCa" class="text-2xl font-extrabold text-bleu-pro">0 MAD</p><i class="fas fa-chart-line text-jaune-pro float-right -mt-8 text-2xl"></i></div>
+      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Marge brute</p><p id="kpiMarge" class="text-2xl font-extrabold text-bleu-pro">0 MAD</p><i class="fas fa-coins text-jaune-pro float-right -mt-8 text-2xl"></i></div>
+      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Taux marge</p><p id="kpiTaux" class="text-2xl font-extrabold text-bleu-pro">0%</p><i class="fas fa-percent text-jaune-pro float-right -mt-8 text-2xl"></i></div>
+      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-jaune-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Seuil rentabilité</p><p id="kpiSeuil" class="text-2xl font-extrabold text-jaune-pro">0 MAD</p><i class="fas fa-flag-checkered text-jaune-pro float-right -mt-8 text-2xl"></i></div>
+      <div class="bg-white rounded-xl shadow-sm p-4 border-l-8 border-bleu-pro card-pro card"><p class="text-gray-500 text-xs uppercase">Score pilotage</p><p id="scorePilotage" class="text-2xl font-extrabold">0/100</p><i class="fas fa-trophy text-jaune-pro float-right -mt-8 text-2xl"></i></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div class="bg-white rounded-2xl shadow-sm p-5 card">
+        <h2 class="text-lg font-semibold mb-3 flex items-center gap-2 text-bleu-pro"><i class="fas fa-cubes text-jaune-pro"></i> Coût réel batch (MAD/m³)</h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+          <label>Ciment (t) <input type="number" id="coutCiment" value="120" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+          <label>Gravier (t) <input type="number" id="coutGravier" value="80" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+          <label>Sable (t) <input type="number" id="coutSable" value="40" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+          <label>Gazole (L) <input type="number" id="coutGazole" value="11" step="1" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+          <label>Maintenance <input type="number" id="coutMaintenance" value="200" step="50" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+          <label>Main d'œuvre (h) <input type="number" id="coutMO" value="60" step="10" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+          <label>Prix vente (MAD) <input type="number" id="prix" value="320" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+          <label>Quantité (m³) <input type="number" id="qte" value="400" step="10" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+          <label>Throughput (m³/j) <input type="number" id="throughput" value="45" step="5" min="0" class="w-full border rounded-xl px-2 py-1 bg-gray-50"></label>
+        </div>
+        <div class="mt-4 p-3 bg-amber-50 rounded-xl"><span class="font-bold">Coût unitaire réel (batch) :</span> <span id="actualCostDisplay" class="font-mono text-jaune-pro text-xl">0 MAD</span></div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-5 card">
+        <div class="flex justify-between items-center mb-3"><h2 class="text-lg font-semibold text-bleu-pro"><i class="fas fa-receipt text-jaune-pro"></i> Charges fixes (MAD)</h2><button id="ajouterCharge" class="text-sm bg-jaune-pro text-bleu-pro px-3 py-1 rounded-lg font-semibold"><i class="fas fa-plus"></i> Ajouter</button></div>
+        <div class="overflow-x-auto max-h-64 overflow-y-auto"><table class="w-full text-sm"><thead class="border-b border-gray-200"><tr><th>Libellé</th><th>Montant</th><th></th></tr></thead><tbody id="tableFixes"></tbody></table></div>
+        <div class="mt-4 pt-3 border-t border-gray-200 flex justify-between font-bold"><span>Total fixes :</span><span id="totalFixes" class="text-jaune-pro">0 MAD</span></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div class="bg-white rounded-2xl shadow-sm p-4 card">
+        <h3 class="font-semibold text-bleu-pro"><i class="fas fa-road text-jaune-pro"></i> Price Optimizer (logistique)</h3>
+        <label class="text-sm">Distance (km) <input type="number" id="distance" value="20" step="5" min="0" class="w-full border rounded-lg mt-1 p-1"></label>
+        <label class="text-sm mt-2 block">Coût fixe trajet <input type="number" id="coutTrajet" value="150" step="10" min="0" class="w-full border rounded-lg p-1"></label>
+        <button id="optimizePrice" class="mt-3 w-full bg-bleu-pro text-white py-1 rounded-lg text-sm">Calculer prix optimal</button>
+        <p id="optimalPriceDisplay" class="text-sm mt-2 font-bold text-center text-jaune-pro"></p>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-4 card">
+        <h3 class="font-semibold text-bleu-pro"><i class="fas fa-chart-line text-jaune-pro"></i> Prediction Engine</h3>
+        <p class="text-sm">CA prévu mois prochain : <span id="predictionResult" class="font-bold text-jaune-pro">-- MAD</span></p>
+        <div class="mt-2 space-y-2 text-sm">
+          <button id="scenarioOpti" class="w-full bg-emerald-50 p-2 rounded-lg text-left">📈 Optimiste (+15% qte, -5% CV)</button>
+          <button id="scenarioPessi" class="w-full bg-amber-50 p-2 rounded-lg text-left">📉 Pessimiste (-10% qte, +8% CV)</button>
+          <button id="scenarioEquilibre" class="w-full bg-blue-50 p-2 rounded-lg text-left">🎯 Atteindre seuil rentabilité</button>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-4 card">
+        <h3 class="font-semibold text-bleu-pro"><i class="fas fa-bell text-jaune-pro"></i> Alertes & conseils</h3>
+        <div id="alertes" class="mt-2 space-y-2 text-sm max-h-48 overflow-auto"></div>
+        <div class="mt-2"><label class="text-xs">Webhook URL (WhatsApp/n8n) <input type="url" id="webhookUrl" placeholder="https://votre-n8n.com/webhook" class="w-full border rounded-lg p-1 text-xs"></label>
+        <button id="sendWebhook" class="mt-1 w-full bg-bleu-pro text-white py-1 rounded-lg text-xs">Envoyer alerte</button></div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm p-4 card"><canvas id="graphique" height="200"></canvas></div>
+      <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro">Analyse seuil (MAD)</h3><div id="analyseDetails" class="text-sm space-y-1 mt-2"></div></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 no-print">
+      <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro"><i class="fas fa-history"></i> Journal webhook</h3><div id="webhookLog" class="mt-2 max-h-48 overflow-auto bg-gray-50 rounded-lg p-2 text-xs"></div></div>
+      <div class="bg-white rounded-2xl shadow-sm p-4 card"><h3 class="font-semibold text-bleu-pro"><i class="fas fa-edit"></i> Suivi modifications</h3><div id="modificationsLog" class="mt-2 max-h-48 overflow-auto bg-gray-50 rounded-lg p-2 text-xs"></div></div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm p-5 card"><h2 class="text-xl font-bold text-bleu-pro">Rapport d'analyse</h2><div id="rapportTexte" class="text-sm text-gray-700 mt-2 space-y-1"></div></div>
+    <div class="text-center text-gray-400 text-xs mt-6 no-print">© PTM NANO ULTIMATE – Performance Engine v3.0</div>
+  </div>
+
+  <script>
+    // ---------- DONNÉES ----------
+    let fixedCharges = [{ name: "Loyer", amount: 8500 }, { name: "Salaires", amount: 12500 }, { name: "Assurances", amount: 1200 }, { name: "Marketing", amount: 2100 }, { name: "Frais admins", amount: 950 }];
+    let chart = null;
+    let webhookHistory = [], modificationHistory = [];
+
+    // ---------- FONCTIONS UTILITAIRES ----------
+    function addModification(msg) { modificationHistory.unshift({ time: new Date().toLocaleTimeString(), msg }); if(modificationHistory.length>10) modificationHistory.pop(); updateModifLog(); }
+    function updateModifLog() { let div=document.getElementById('modificationsLog'); if(modificationHistory.length===0) div.innerHTML='<div class="text-gray-400">Ajustez les paramètres...</div>'; else div.innerHTML=modificationHistory.map(m=>`<div class="modif-item">[${m.time}] ${m.msg}</div>`).join(''); }
+    function addWebhookLog(status, url, payload) { webhookHistory.unshift({ time: new Date().toLocaleString(), status, url, payload: JSON.stringify(payload).substring(0,200) }); if(webhookHistory.length>5) webhookHistory.pop(); let logDiv=document.getElementById('webhookLog'); if(webhookHistory.length===0) logDiv.innerHTML='<div class="text-gray-400">Aucun envoi</div>'; else logDiv.innerHTML=webhookHistory.map(e=>`<div class="log-entry"><strong>${e.time}</strong> – ${e.status}<br>🔗 ${e.url}<br>${e.payload}...</div>`).join(''); }
+    function getTotalFixes() { return Math.round(fixedCharges.reduce((s,c)=>s+(isNaN(c.amount)?0:c.amount),0)); }
+    function calculActualCost() {
+      let ciment=parseFloat(document.getElementById('coutCiment').value)||0;
+      let gravier=parseFloat(document.getElementById('coutGravier').value)||0;
+      let sable=parseFloat(document.getElementById('coutSable').value)||0;
+      let gazole=parseFloat(document.getElementById('coutGazole').value)||0;
+      let maintenance=parseFloat(document.getElementById('coutMaintenance').value)||0;
+      let mo=parseFloat(document.getElementById('coutMO').value)||0;
+      let cost = (ciment*0.35)+(gravier*0.7)+(sable*0.5)+(gazole*15)+(maintenance/50)+(mo*0.5);
+      let costRounded = Math.round(cost * 100) / 100;
+      document.getElementById('actualCostDisplay').innerText = costRounded.toFixed(2)+" MAD";
+      return costRounded;
     }
 
-    async function storageGet(key) {
-      if (window.storage && typeof window.storage.get === 'function') {
-        try { const r = await window.storage.get(key); return r ? r.value : null; } catch (e) {}
-      }
-      try { return localStorage.getItem(key); } catch (e) { return null; }
-    }
-
-    function collectFormData() {
-      return {
-        prix: document.getElementById('prix').value,
-        qte: document.getElementById('qte').value,
-        coutCiment: document.getElementById('coutCiment').value,
-        coutGravier: document.getElementById('coutGravier').value,
-        coutSable: document.getElementById('coutSable').value,
-        coutGazole: document.getElementById('coutGazole').value,
-        coutMaintenance: document.getElementById('coutMaintenance').value,
-        coutMO: document.getElementById('coutMO').value,
-        throughput: document.getElementById('throughput').value,
-        fixedCharges: fixedCharges,
-        darkMode: document.body.classList.contains('dark')
-      };
-    }
-
-    // Sauvegarde manuelle (bouton) : immédiate + journalisée
-    async function saveToLocal() {
-      clearTimeout(autoSaveTimer);
-      await storageSet(STORAGE_KEY, JSON.stringify(collectFormData()));
-      addModification("Configuration sauvegardée");
-    }
-
-…
+    // Fonction graphique
+    function updateChart(prix, cvReel, totalFixes, qte, seuilQte) {
+      if (chart) chart.destroy();
+      let isDark = document.body.classList.contains('dark');
+      let textColor = isDark ? '#E2E8F0' : '#0A2540';
+      let gridColor = isDark ? '#334155' : '#E2E8F0';
+      let maxQ = Math.max(qte, (seuilQte && isFinite(seuilQte)) ? seuilQte * 1.2 : qte * 1.5, 30);
+      maxQ = Math.ceil(maxQ / 20) * 20;
+      let quantites = [];
+      for (let i=0; i<=maxQ; i+=Math.max(1, Math.floor(maxQ/15))) quantites.push(i);
+      let recettes = quantites.map(q => prix * q);
+      let coutsTotaux = quantites.map(q => (cvReel * q) + totalFixes);
+      const ctx = document.getElementById('graphique').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: quantites,
+          datasets: [
+            { label: 'CA (MAD)', data: recettes, borderColor: '#0A2540', backgroundColor: 'transparent', tension: 0.1, pointBackgroundColor: '#0
